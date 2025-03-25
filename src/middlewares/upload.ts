@@ -10,7 +10,6 @@ const uploadsDir = path.join(__dirname, "../uploads");
 const usersDir = path.join(uploadsDir, "users");
 const postsDir = path.join(uploadsDir, "posts");
 
-// Create directories if they don't exist
 [uploadsDir, usersDir, postsDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });

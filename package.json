@@ -18,8 +18,9 @@
   "license": "ISC",
   "description": "Mini blog api with user authentication",
   "dependencies": {
-    "@types/helmet": "^0.0.48",
+    "@types/cookie-parser": "^1.4.8",
     "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

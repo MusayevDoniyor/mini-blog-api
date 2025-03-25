@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
 
 export interface IPost {
+  _id: mongoose.Schema.Types.ObjectId;
   title: string;
   content: string;
-  author: mongoose.Types.ObjectId;
-  image: string;
+  author: mongoose.Schema.Types.ObjectId;
+  image?: string;
   createdAt: Date;
   updatedAt: Date;
 }

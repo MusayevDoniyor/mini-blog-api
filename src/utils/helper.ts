@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { IUser } from "../models/user.model.js";
-import jwt, { SignOptions, Secret } from "jsonwebtoken";
+import jwt, { Secret, SignOptions } from "jsonwebtoken";
 
 interface IResponse<T = any> {
   res: Response;
@@ -34,34 +34,22 @@ export const response = <T>({
 };
 
 export const generateTokens = (user: IUser) => {
-  try {
-    const access_token_secret = process.env.ACCESS_SECRET_KEY;
-    const refresh_token_secret = process.env.REFRESH_SECRET_KEY;
+  console.log(user);
+  const access_token_secret = process.env.ACCESS_SECRET_KEY as string;
+  const refresh_token_secret = process.env.REFRESH_SECRET_KEY as string;
 
-    if (!access_token_secret || !refresh_token_secret) {
-      throw new Error("JWT secrets are not configured");
-    }
+  const access_expire_time = process.env.ACCESS_EXPIRE_TIME;
+  const refresh_expire_time = process.env.REFRESH_EXPIRE_TIME;
 
-    const access_token = jwt.sign(
-      { userId: user._id },
-      access_token_secret as Secret,
-      { expiresIn: process.env.ACCESS_EXPIRE_TIME || "1h" } as SignOptions
-    );
+  const access_token = jwt.sign({ userId: user._id }, access_token_secret, {
+    expiresIn: access_expire_time,
+  } as SignOptions);
 
-    const refresh_token = jwt.sign(
-      { userId: user._id },
-      refresh_token_secret as Secret,
-      { expiresIn: process.env.REFRESH_EXPIRE_TIME || "7d" } as SignOptions
-    );
+  const refresh_token = jwt.sign({ userId: user._id }, refresh_token_secret, {
+    expiresIn: refresh_expire_time,
+  } as SignOptions);
 
-    return { access_token, refresh_token };
-  } catch (error) {
-    throw new Error(
-      `Token generation failed: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
-  }
+  return { access_token, refresh_token };
 };
 
 export const verifyToken = (token: string, secret: string) => {
