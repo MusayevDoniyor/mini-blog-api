@@ -10,6 +10,7 @@ import main_api_doc from "../routes/api-main-doc.js";
 import winston from "winston";
 import { response } from "../utils/helper.js";
 import { setupSwagger } from "../swagger.js";
+import helmet from "helmet";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +19,7 @@ const app = express();
 
 app.use(cors());
 app.use(morgan("dev"));
+app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
