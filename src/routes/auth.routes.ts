@@ -30,7 +30,6 @@ router.post(
         });
       }
 
-      // Create new user
       const newUser = new User({
         name,
         email,
@@ -40,13 +39,11 @@ router.post(
 
       await newUser.save();
 
-      // Generate tokens
       const { access_token, refresh_token } = generateTokens(newUser);
 
-      // Set refresh token in cookie
       res.cookie("refresh_token", refresh_token, {
         httpOnly: true,
-        maxAge: 45 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 45 * 24 * 60 * 60 * 1000,
       });
 
       response({
@@ -99,11 +96,12 @@ router.post("/login", async (req: Request, res: Response) => {
       });
 
     const { access_token, refresh_token } = generateTokens(user);
+    console.log("access_token", access_token);
+    console.log("refresh_token", refresh_token);
 
-    // Set refresh token in cookie
     res.cookie("refresh_token", refresh_token, {
       httpOnly: true,
-      maxAge: 45 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 45 * 24 * 60 * 60 * 1000,
     });
 
     return response({

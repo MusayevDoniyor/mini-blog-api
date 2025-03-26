@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import authRoute from "../routes/auth.routes.js";
 import postRoute from "../routes/post.routes.js";
+import { response } from "../utils/helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,11 +34,24 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error("❌ Error:", err.message);
+  const status = res.statusCode !== 200 ? res.statusCode : 500;
+  console.error(`❌ Error [${status}]:`, err.message);
 
-  res
-    .status(500)
-    .json({ message: "Internal Server Error", error: err.message });
+  return response({
+    res,
+    status,
+    error: err.message || "Internal Server Error",
+  });
+});
+
+process.on("unhandledRejection", (err: Error) => {
+  console.log("💥 Unhandled Rejection:", err);
+  process.exit(1);
+});
+
+process.on("uncaughtException", (err: Error) => {
+  console.log("💥 Uncaught Exception:", err);
+  process.exit(1);
 });
 
 export default app;

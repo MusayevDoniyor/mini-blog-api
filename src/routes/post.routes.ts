@@ -3,7 +3,7 @@ import { response } from "../utils/helper.js";
 import authMiddleware, { AuthRequest } from "../middlewares/auth.middleware.js";
 import { uploadPostImage } from "../middlewares/upload.js";
 import Post from "../models/post.model.js";
-import { checkPostAuthor } from "../middlewares/post.middleware.js";
+import { checkPostAuthor } from "../middlewares/owner.middleware.js";
 
 const router = express.Router();
 
