@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import authRoute from "../routes/auth.routes.js";
 import postRoute from "../routes/post.routes.js";
+import main_api_doc from "../routes/api-main-doc.js";
 import winston from "winston";
 import { response } from "../utils/helper.js";
 import { setupSwagger } from "../swagger.js";
@@ -44,9 +45,7 @@ app.use(
   express.static(path.join(__dirname, "../uploads/posts"), { maxAge: "1d" })
 );
 
-app.get("/", (_: Request, res: Response) => {
-  res.send("<h1>Welcome to Mini Blog Api</h1>");
-});
+app.use("/", main_api_doc);
 
 // ! TEST ERROR
 app.post("/test-error", (req: Request, res: Response) => {
