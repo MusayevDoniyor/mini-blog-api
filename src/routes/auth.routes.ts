@@ -1,9 +1,13 @@
 import express, { Request, Response } from "express";
-import { generateTokens, response } from "../utils/helper.js";
+import {
+  findDocumentById,
+  generateTokens,
+  response,
+  verifyToken,
+} from "../utils/helper.js";
 import User, { IUser } from "../models/user.model.js";
 import authMiddleware, { AuthRequest } from "../middlewares/auth.middleware.js";
-import { uploadUserImage } from "../middlewares/upload.js";
-import jwt from "jsonwebtoken";
+import { uploadUserImage } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
@@ -139,18 +143,17 @@ router.post("/refresh", async (req: Request, res: Response) => {
     }
 
     const refreshSecret = process.env.REFRESH_SECRET_KEY as string;
-    const decoded = jwt.verify(refreshToken, refreshSecret) as {
+    const decoded = verifyToken(refreshToken, refreshSecret) as {
       userId: string;
     };
 
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return response({
-        res,
-        status: 404,
-        error: "User not found",
-      });
-    }
+    const user = await findDocumentById(
+      User,
+      decoded.userId,
+      res,
+      "User not found"
+    );
+    if (!user) return;
 
     const { access_token } = generateTokens(user);
 

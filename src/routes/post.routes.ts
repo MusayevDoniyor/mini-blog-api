@@ -1,9 +1,10 @@
 import express, { Request, Response } from "express";
-import { response } from "../utils/helper.js";
+import { findDocumentById, response } from "../utils/helper.js";
 import authMiddleware, { AuthRequest } from "../middlewares/auth.middleware.js";
-import { uploadPostImage } from "../middlewares/upload.js";
+import { uploadPostImage } from "../middlewares/upload.middleware.js";
 import Post from "../models/post.model.js";
 import { checkPostAuthor } from "../middlewares/owner.middleware.js";
+import validateObjectId from "../middlewares/validateObjectId.middleware.js";
 
 const router = express.Router();
 
@@ -31,10 +32,16 @@ router.post(
 
       await newPost.save();
 
-      const populatedPost = await Post.findById(newPost._id).populate(
-        "author",
-        "name email image"
+      const populatedPost = await findDocumentById(
+        Post,
+        newPost._id,
+        res,
+        "Post not found"
       );
+
+      if (!populatedPost) return;
+
+      await populatedPost.populate("author", "name email image");
 
       response({
         res,
@@ -88,7 +95,7 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", validateObjectId(), async (req: Request, res: Response) => {
   try {
     const post = await Post.findById(req.params.id).populate(
       "author",
@@ -121,6 +128,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.put(
   "/:id",
   authMiddleware,
+  validateObjectId(),
   checkPostAuthor,
   uploadPostImage.single("image"),
   async (req: AuthRequest, res: Response) => {
@@ -157,6 +165,7 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
+  validateObjectId(),
   checkPostAuthor,
   async (req: AuthRequest, res: Response) => {
     try {

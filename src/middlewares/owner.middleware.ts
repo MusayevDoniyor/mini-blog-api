@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { response } from "../utils/helper.js";
+import { findDocumentById, response } from "../utils/helper.js";
 import Post from "../models/post.model.js";
 import { AuthRequest } from "./auth.middleware.js";
 
@@ -9,15 +9,14 @@ export const checkPostAuthor = async (
   next: Function
 ) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await findDocumentById(
+      Post,
+      req.params.id,
+      res,
+      "Post not found"
+    );
 
-    if (!post) {
-      return response({
-        res,
-        status: 404,
-        error: "Post not found",
-      });
-    }
+    if (!post) return;
 
     if (post.author.toString() !== req.user?.userId) {
       return response({

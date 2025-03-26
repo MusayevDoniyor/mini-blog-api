@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { IUser } from "../models/user.model.js";
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import mongoose from "mongoose";
 
 interface IResponse<T = any> {
   res: Response;
@@ -57,5 +58,28 @@ export const verifyToken = (token: string, secret: string) => {
     return jwt.verify(token, secret as Secret);
   } catch (error) {
     throw new Error("Invalid or expired token");
+  }
+};
+
+export const findDocumentById = async <T>(
+  Model: mongoose.Model<T>,
+  id: mongoose.Schema.Types.ObjectId | string,
+  res: Response,
+  errorMessage: string
+) => {
+  try {
+    const document = await Model.findById(id);
+
+    if (!document)
+      return response({
+        res,
+        status: 404,
+        error: errorMessage,
+      });
+
+    return document;
+  } catch (error: any) {
+    console.error("❌ Error in findDocumentById:", error.message);
+    throw error;
   }
 };
