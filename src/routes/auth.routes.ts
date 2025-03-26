@@ -1,230 +1,220 @@
-import express, { Request, Response } from "express";
-import {
-  findDocumentById,
-  generateTokens,
-  response,
-  verifyToken,
-} from "../utils/helper.js";
-import User, { IUser } from "../models/user.model.js";
-import authMiddleware, { AuthRequest } from "../middlewares/auth.middleware.js";
+import express from "express";
+import authMiddleware from "../middlewares/auth.middleware.js";
 import { uploadUserImage } from "../middlewares/upload.middleware.js";
+import {
+  getProfile,
+  login,
+  logout,
+  refresh,
+  register,
+} from "../controller/auth.controller.js";
 
 const router = express.Router();
 
-router.post(
-  "/register",
-  uploadUserImage.single("image"),
-  async (req: Request, res: Response) => {
-    try {
-      const { name, email, password }: IUser = req.body;
+/**
+ * @swagger
+ * tags:
+ *   name: Authentication
+ *   description: User authentication and session management
+ */
 
-      if (!email || !password || !name)
-        return response({
-          res,
-          status: 400,
-          error: "Email, Name and password are required",
-        });
+// * AUTH REGISTER
 
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return response({
-          res,
-          status: 400,
-          error: "User already exists with this email.",
-        });
-      }
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: John Doe
+ *               email:
+ *                 type: string
+ *                 example: john@example.com
+ *               password:
+ *                 type: string
+ *                 example: StrongP@ss123!
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: User successfully registered
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     image:
+ *                       type: string
+ *                     access_token:
+ *                       type: string
+ *       400:
+ *         description: Missing or invalid fields
+ *       500:
+ *         description: Internal server error
+ */
 
-      const newUser = new User({
-        name,
-        email,
-        password,
-        image: req.file ? `/api/users/${req.file.filename}` : "",
-      });
+// * AUTH LOGIN
 
-      await newUser.save();
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Log in a user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: john@example.com
+ *               password:
+ *                 type: string
+ *                 example: StrongP@ss123!
+ *     responses:
+ *       200:
+ *         description: User successfully logged in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     access_token:
+ *                       type: string
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         name:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         image:
+ *                           type: string
+ *       401:
+ *         description: Invalid credentials
+ *       404:
+ *         description: User not found
+ */
 
-      const { access_token, refresh_token } = generateTokens(newUser);
+// * AUTH REFRESH
 
-      res.cookie("refresh_token", refresh_token, {
-        httpOnly: true,
-        maxAge: 45 * 24 * 60 * 60 * 1000,
-      });
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh the access token
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Access token successfully refreshed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     access_token:
+ *                       type: string
+ *       401:
+ *         description: Invalid or expired refresh token
+ */
 
-      response({
-        res,
-        status: 201,
-        data: {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          image: newUser.image,
-          access_token,
-        },
-      });
-    } catch (error: any) {
-      response({
-        res,
-        status: 500,
-        error: "An error occurred while registering the user: " + error.message,
-      });
-      console.log(error);
-    }
-  }
-);
+// * AUTH LOGOUT
 
-router.post("/login", async (req: Request, res: Response) => {
-  try {
-    const { email, password } = <IUser>req.body;
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Log out the user
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: User successfully logged out
+ */
 
-    if (!email || !password)
-      return response({
-        res,
-        status: 400,
-        error: "Email and password are required",
-      });
+// * AUTH ME
 
-    const user = await User.findOne({ email });
-    if (!user)
-      return response({
-        res,
-        status: 404,
-        error: "User not found",
-      });
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get user profile
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: [] # This enables token-based authentication
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: 60d0fe4f5311236168a109ca
+ *                     name:
+ *                       type: string
+ *                       example: John Doe
+ *                     email:
+ *                       type: string
+ *                       example: john@example.com
+ *                     image:
+ *                       type: string
+ *                       example: /uploads/users/image.jpg
+ *       404:
+ *         description: User not found
+ *       401:
+ *         description: Unauthorized
+ */
 
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid)
-      return response({
-        res,
-        status: 401,
-        error: "Invalid password",
-      });
+router.post("/register", uploadUserImage.single("image"), register);
 
-    const { access_token, refresh_token } = generateTokens(user);
-    console.log("access_token", access_token);
-    console.log("refresh_token", refresh_token);
+router.post("/login", login);
 
-    res.cookie("refresh_token", refresh_token, {
-      httpOnly: true,
-      maxAge: 45 * 24 * 60 * 60 * 1000,
-    });
+router.post("/refresh", refresh);
 
-    return response({
-      res,
-      status: 200,
-      data: {
-        access_token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-        },
-      },
-    });
-  } catch (error: any) {
-    response({
-      res,
-      status: 500,
-      error: "An error occurred while logging in: " + error.message,
-    });
-    console.log(error);
-  }
-});
+router.post("/logout", logout);
 
-router.post("/refresh", async (req: Request, res: Response) => {
-  try {
-    const refreshToken = req.cookies.refresh_token;
-    if (!refreshToken) {
-      return response({
-        res,
-        status: 401,
-        error: "Refresh token not found",
-      });
-    }
-
-    const refreshSecret = process.env.REFRESH_SECRET_KEY as string;
-    const decoded = verifyToken(refreshToken, refreshSecret) as {
-      userId: string;
-    };
-
-    const user = await findDocumentById(
-      User,
-      decoded.userId,
-      res,
-      "User not found"
-    );
-    if (!user) return;
-
-    const { access_token } = generateTokens(user);
-
-    response({
-      res,
-      status: 200,
-      data: { access_token },
-    });
-  } catch (error: any) {
-    response({
-      res,
-      status: 401,
-      error: "Invalid or expired refresh token",
-    });
-    console.log(error);
-  }
-});
-
-router.post("/logout", async (req: Request, res: Response) => {
-  try {
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      maxAge: 0,
-    });
-
-    response({
-      res,
-      status: 200,
-      data: { message: "Logged out successfully" },
-    });
-  } catch (error: any) {
-    response({
-      res,
-      status: 500,
-      error: "An error occurred while logging out: " + error.message,
-    });
-    console.log(error);
-  }
-});
-
-router.get("/me", authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.user?.userId;
-    const user = await User.findById(userId)
-      .select("-password")
-      .populate({
-        path: "posts",
-        options: { sort: { createdAt: -1 } },
-      });
-
-    if (!user) {
-      return response({
-        res,
-        status: 404,
-        error: "User not found",
-      });
-    }
-
-    response({
-      res,
-      status: 200,
-      data: user,
-    });
-  } catch (error: any) {
-    response({
-      res,
-      status: 500,
-      error: "An error occurred while getting your profile: " + error.message,
-    });
-    console.log(error);
-  }
-});
+router.get("/me", authMiddleware, getProfile);
 
 export default router;

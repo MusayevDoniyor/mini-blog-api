@@ -64,7 +64,6 @@ UserSchema.pre("save", async function (next) {
 
   try {
     this.password = await bcrypt.hash(this.password, 12);
-    console.log(this.password);
     next();
   } catch (err: any) {
     next(err);

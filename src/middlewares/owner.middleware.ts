@@ -34,6 +34,5 @@ export const checkPostAuthor = async (
       status: 500,
       error: "An error occurred while checking post author: " + error.message,
     });
-    console.log(error);
   }
 };

@@ -35,7 +35,6 @@ export const response = <T>({
 };
 
 export const generateTokens = (user: IUser) => {
-  console.log(user);
   const access_token_secret = process.env.ACCESS_SECRET_KEY as string;
   const refresh_token_secret = process.env.REFRESH_SECRET_KEY as string;
 

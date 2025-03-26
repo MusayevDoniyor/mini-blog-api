@@ -1,129 +1,223 @@
-import express, { Request, Response } from "express";
-import { findDocumentById, response } from "../utils/helper.js";
-import authMiddleware, { AuthRequest } from "../middlewares/auth.middleware.js";
+import express from "express";
+import authMiddleware from "../middlewares/auth.middleware.js";
 import { uploadPostImage } from "../middlewares/upload.middleware.js";
-import Post from "../models/post.model.js";
 import { checkPostAuthor } from "../middlewares/owner.middleware.js";
 import validateObjectId from "../middlewares/validateObjectId.middleware.js";
+import {
+  createPost,
+  deletePost,
+  getPostById,
+  getPosts,
+  updatePost,
+} from "../controller/post.controller.js";
 
 const router = express.Router();
 
-router.post(
-  "/",
-  authMiddleware,
-  uploadPostImage.single("image"),
-  async (req: AuthRequest, res: Response) => {
-    try {
-      const { title, content } = req.body;
+/**
+ * @swagger
+ * tags:
+ *   name: Posts
+ *   description: Blog post management
+ */
 
-      if (!title || !content)
-        return response({
-          res,
-          status: 400,
-          error: "Title and Content are required",
-        });
+/**
+ * @swagger
+ * /api/posts:
+ *   post:
+ *     summary: Create a new post
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - content
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: My First Post
+ *               content:
+ *                 type: string
+ *                 example: This is the content of my post.
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Post created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: "#/components/schemas/Post"
+ *       400:
+ *         description: Missing required fields
+ *       500:
+ *         description: Internal server error
+ */
 
-      const newPost = new Post({
-        author: req.user?.userId,
-        title,
-        content,
-        image: req.file ? `/api/posts/${req.file.filename}` : "",
-      });
+/**
+ * @swagger
+ * /api/posts:
+ *   get:
+ *     summary: Get all posts
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of posts per page
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *         description: Sort order (e.g., -createdAt)
+ *     responses:
+ *       200:
+ *         description: A list of posts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     posts:
+ *                       type: array
+ *                       items:
+ *                         $ref: "#/components/schemas/Post"
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                         page:
+ *                           type: integer
+ *                         pages:
+ *                           type: integer
+ *       500:
+ *         description: Internal server error
+ */
 
-      await newPost.save();
+/**
+ * @swagger
+ * /api/posts/{id}:
+ *   get:
+ *     summary: Get a post by ID
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the post
+ *     responses:
+ *       200:
+ *         description: Post retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: "#/components/schemas/Post"
+ *       404:
+ *         description: Post not found
+ *       500:
+ *         description: Internal server error
+ */
 
-      const populatedPost = await findDocumentById(
-        Post,
-        newPost._id,
-        res,
-        "Post not found"
-      );
+/**
+ * @swagger
+ * /api/posts/{id}:
+ *   put:
+ *     summary: Update a post
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the post to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: Updated Post Title
+ *               content:
+ *                 type: string
+ *                 example: Updated post content.
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Post updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: "#/components/schemas/Post"
+ *       404:
+ *         description: Post not found
+ *       500:
+ *         description: Internal server error
+ */
 
-      if (!populatedPost) return;
+/**
+ * @swagger
+ * /api/posts/{id}:
+ *   delete:
+ *     summary: Delete a post
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the post to delete
+ *     responses:
+ *       200:
+ *         description: Post deleted successfully
+ *       404:
+ *         description: Post not found
+ *       500:
+ *         description: Internal server error
+ */
 
-      await populatedPost.populate("author", "name email image");
+router.post("/", authMiddleware, uploadPostImage.single("image"), createPost);
 
-      response({
-        res,
-        status: 201,
-        data: populatedPost,
-      });
-    } catch (error: any) {
-      response({
-        res,
-        status: 500,
-        error: "An error occurred while creating the post: " + error.message,
-      });
-      console.log(error);
-    }
-  }
-);
+router.get("/", getPosts);
 
-router.get("/", async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const sort = (req.query.sort as string) || "-createdAt";
-
-    const posts = await Post.find()
-      .sort(sort)
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .populate("author", "name email image");
-
-    const total = await Post.countDocuments();
-
-    response({
-      res,
-      status: 200,
-      data: {
-        posts,
-        pagination: {
-          total,
-          page,
-          pages: Math.ceil(total / limit),
-        },
-      },
-    });
-  } catch (error: any) {
-    response({
-      res,
-      status: 500,
-      error: "An error occurred while getting posts: " + error.message,
-    });
-    console.log(error);
-  }
-});
-
-router.get("/:id", validateObjectId(), async (req: Request, res: Response) => {
-  try {
-    const post = await Post.findById(req.params.id).populate(
-      "author",
-      "name email image"
-    );
-
-    if (!post) {
-      return response({
-        res,
-        status: 404,
-        error: "Post not found",
-      });
-    }
-
-    response({
-      res,
-      status: 200,
-      data: post,
-    });
-  } catch (error: any) {
-    response({
-      res,
-      status: 500,
-      error: "An error occurred while getting the post: " + error.message,
-    });
-    console.log(error);
-  }
-});
+router.get("/:id", validateObjectId(), getPostById);
 
 router.put(
   "/:id",
@@ -131,35 +225,7 @@ router.put(
   validateObjectId(),
   checkPostAuthor,
   uploadPostImage.single("image"),
-  async (req: AuthRequest, res: Response) => {
-    try {
-      const { title, content } = req.body;
-
-      if (title) req.post.title = title;
-      if (content) req.post.content = content;
-      if (req.file) req.post.image = `/api/posts/${req.file.filename}`;
-
-      await req.post.save();
-
-      const updatedPost = await Post.findById(req.post._id).populate(
-        "author",
-        "name email image"
-      );
-
-      response({
-        res,
-        status: 200,
-        data: updatedPost,
-      });
-    } catch (error: any) {
-      response({
-        res,
-        status: 500,
-        error: "An error occurred while updating the post: " + error.message,
-      });
-      console.log(error);
-    }
-  }
+  updatePost
 );
 
 router.delete(
@@ -167,24 +233,7 @@ router.delete(
   authMiddleware,
   validateObjectId(),
   checkPostAuthor,
-  async (req: AuthRequest, res: Response) => {
-    try {
-      await req.post.deleteOne();
-
-      response({
-        res,
-        status: 200,
-        data: { message: "Post deleted successfully" },
-      });
-    } catch (error: any) {
-      response({
-        res,
-        status: 500,
-        error: "An error occurred while deleting the post: " + error.message,
-      });
-      console.log(error);
-    }
-  }
+  deletePost
 );
 
 export default router;
